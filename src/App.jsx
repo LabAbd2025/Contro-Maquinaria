@@ -32,7 +32,7 @@ function App() {
 
 
         {/* Listas por máquina */}
-        <Route path="/registros/bsf_321_196" element={<ListaRegistrosBottlepack321 />} />
+        <Route path="/registros/bfs_321_196" element={<ListaRegistrosBottlepack321 />} />
         <Route path="/registros/bfs_305_183" element={<ListaRegistrosBottlepack305 />} />
         <Route path="/registros/bfs_312_215" element={<ListaRegistrosBottlepack312 />} />
       </Routes>

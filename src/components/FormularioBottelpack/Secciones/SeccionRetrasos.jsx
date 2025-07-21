@@ -1,12 +1,14 @@
-// SeccionRetrasos.jsx
 import React, { useState } from 'react'
 import {
   factoresNoEficiencia,
   retrasosProduccion,
+  retrasosCalidadControl,
   retrasosMantenimiento,
-  otrosFactores
+  otrosFactores,
+  placeholdersRetrasos
 } from '../helpers/calculos'
 import { referenciasProductos } from '../helpers/referenciasProductos'
+
 
 const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
   const [productoActivo, setProductoActivo] = useState(null)
@@ -19,12 +21,12 @@ const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
       <div className="card-body">
         <div className="row g-2">
           {factores.map((factor, index) => (
-            <div key={index} className="col-lg-6">
+            <div key={index} className="col-lg-12 mb-2">
               <div className="row g-1 align-items-center">
-                <div className="col-8">
+                <div className="col-4">
                   <label className="form-label text-sm">{factor}</label>
                 </div>
-                <div className="col-4">
+                <div className="col-2">
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -37,12 +39,40 @@ const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
                       const m = parseInt(minutos) || 0
                       if (h >= 0 && h < 24 && m >= 0 && m < 60) {
                         const tiempoFormateado = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-                        handleRetrasoChange(categoria, factor, tiempoFormateado)
+                        handleRetrasoChange(
+                          categoria,
+                          factor,
+                          tiempoFormateado,
+                          formulario[categoria][factor]?.descripcion || ''
+                        )
                       } else if (!valor) {
-                        handleRetrasoChange(categoria, factor, '')
+                        handleRetrasoChange(
+                          categoria,
+                          factor,
+                          '',
+                          formulario[categoria][factor]?.descripcion || ''
+                        )
                       }
                     }}
                     placeholder="00:00"
+                  />
+                </div>
+                <div className="col-6">
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    value={formulario[categoria][factor]?.descripcion || ''}
+                    onChange={(e) => {
+                      const descripcion = e.target.value
+                      handleRetrasoChange(
+                        categoria,
+                        factor,
+                        formulario[categoria][factor]?.tiempo || '',
+                        descripcion
+                      )
+                    }}
+                    placeholder={placeholdersRetrasos[factor] || "Motivo o descripción del retraso"}
+                    maxLength={120}
                   />
                 </div>
               </div>
@@ -92,9 +122,10 @@ const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
         </div>
       )}
 
-      {/* Renderizado de todos los grupos de factores */}
+      {/* Renderizado de todos los grupos de factores (TAL CUAL EXCEL) */}
       {renderGrupoRetrasos('Factores que No Afectan la Eficiencia', factoresNoEficiencia, 'factoresNoEficiencia')}
       {renderGrupoRetrasos('Retrasos por Producción', retrasosProduccion, 'retrasosProduccion')}
+      {renderGrupoRetrasos('Retrasos por Control de Calidad', retrasosCalidadControl, 'retrasosCalidadControl')}
       {renderGrupoRetrasos('Retrasos por Mantenimiento', retrasosMantenimiento, 'retrasosMantenimiento')}
       {renderGrupoRetrasos('Otros Factores', otrosFactores, 'otrosFactores')}
     </div>

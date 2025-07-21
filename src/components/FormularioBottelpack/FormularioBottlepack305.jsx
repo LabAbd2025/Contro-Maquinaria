@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast, ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
 import { guardarRegistroBottlepack } from '../../services/produccionService'
 import {
   calcularDuracionEntreHoras,
@@ -22,6 +20,8 @@ import { FaHome } from 'react-icons/fa'
 const FormularioBottlepack = () => {
   const navigate = useNavigate()
   const [seccionActiva, setSeccionActiva] = useState('basicos')
+  const [showModal, setShowModal] = useState(false)
+  const [guardando, setGuardando] = useState(false) // Bloquear botón durante guardado
 
   const [formulario, setFormulario] = useState({
     fechaInicio: '', fechaFin: '', duracionDias: '', dia: '',
@@ -90,28 +90,31 @@ const FormularioBottlepack = () => {
     if ((campo === 'fechaInicio' || campo === 'fechaFin') && valor) {
       const fechaActual = obtenerFechaActual()
       if (valor < fechaActual) {
-        toast.warning('⚠️ No se pueden seleccionar fechas anteriores a hoy')
+        alert('⚠️ No se pueden seleccionar fechas anteriores a hoy')
         return
       }
       if (campo === 'fechaFin' && valor < formulario.fechaInicio) {
-        toast.warning('⚠️ La fecha de fin no puede ser anterior a la de inicio')
+        alert('⚠️ La fecha de fin no puede ser anterior a la de inicio')
         return
       }
     }
     setFormulario(prev => ({ ...prev, [campo]: valor }))
   }
 
-  const handleRetrasoChange = (categoria, factor, valor) => {
+  // AHORA handleRetrasoChange acepta: categoria, factor, tiempo, descripcion
+  const handleRetrasoChange = (categoria, factor, tiempo, descripcion) => {
     setFormulario(prev => ({
       ...prev,
       [categoria]: {
         ...prev[categoria],
-        [factor]: { ...prev[categoria][factor], tiempo: valor }
+        [factor]: { tiempo, descripcion }
       }
     }))
   }
 
   const guardarRegistro = async () => {
+    if (guardando || showModal) return; // Ya está guardando o ya se guardó
+    setGuardando(true)
     try {
       const nuevoRegistro = {
         ...formulario,
@@ -119,16 +122,22 @@ const FormularioBottlepack = () => {
         fechaCreacion: new Date().toISOString()
       }
       await guardarRegistroBottlepack('bfs_305_183', nuevoRegistro)
-      toast.success('✅ Registro guardado exitosamente. ¡Buen trabajo!')
-      navigate('/registros/bfs_305_183')
-    } catch (error) {
-      console.error(error)
-      toast.error('❌ Error al guardar. Por favor, intenta nuevamente.')
+      setShowModal(true)
+    } catch {
+      alert('❌ Error al guardar. Por favor, intenta nuevamente.')
+    } finally {
+      setGuardando(false)
     }
   }
 
   const limpiarFormulario = () => {
     setFormulario(prev => ({ ...prev, observaciones: '' }))
+  }
+
+  // Al cerrar el modal, ir a la lista
+  const handleModalClose = () => {
+    setShowModal(false)
+    navigate('/registros/bfs_305_183')
   }
 
   return (
@@ -174,15 +183,50 @@ const FormularioBottlepack = () => {
           )}
 
           <div className="d-flex gap-2 mt-4">
-            <button className="btn btn-primary btn-lg" onClick={guardarRegistro}>Guardar Registro</button>
-            <button className="btn btn-outline-secondary btn-lg" onClick={limpiarFormulario}>Limpiar Formulario</button>
-            <button className="btn btn-info btn-lg" onClick={() => navigate('/registros/bfs_305_183')}>
+            <button
+              className="btn btn-primary btn-lg"
+              onClick={guardarRegistro}
+              disabled={guardando || showModal}
+            >
+              {guardando ? 'Guardando...' : 'Guardar Registro'}
+            </button>
+            <button
+              className="btn btn-outline-secondary btn-lg"
+              onClick={limpiarFormulario}
+              disabled={guardando || showModal}
+            >
+              Limpiar Formulario
+            </button>
+            <button
+              className="btn btn-info btn-lg"
+              onClick={() => navigate('/registros/bfs_305_183')}
+              disabled={guardando}
+            >
               Ver Registros
             </button>
           </div>
         </div>
       </div>
-      <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
+
+      {/* Modal de éxito */}
+      {showModal && (
+        <div className="modal show fade" style={{ display: 'block', background: 'rgba(0,0,0,0.4)' }} tabIndex="-1" role="dialog">
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content shadow-lg">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title">¡Registro Exitoso!</h5>
+              </div>
+              <div className="modal-body">
+                <p>El registro fue guardado exitosamente.<br />Puedes consultar los registros en la lista.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-success" onClick={handleModalClose}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

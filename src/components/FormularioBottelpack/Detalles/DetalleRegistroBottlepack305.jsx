@@ -18,9 +18,33 @@ const DetalleRegistroBottlepack305 = ({ registro: r }) => {
     ...r.otrosFactores
   })
 
+  // Helper para mostrar detalles de cualquier grupo de retrasos
+  const DetallesRetrasos = ({ titulo, data, color }) => (
+    <div className="col-md-6 mb-2">
+      <div className={`card h-100 border-${color}`}>
+        <div className={`card-header bg-${color} text-white`}>{titulo}</div>
+        <div className="card-body">
+          {Object.entries(data || {}).filter(([, obj]) => obj?.tiempo).length === 0 ? (
+            <div className="text-muted small">No se reportaron retrasos</div>
+          ) : (
+            Object.entries(data || {}).map(([factor, obj], j) =>
+              obj?.tiempo ? (
+                <div key={j} className="small">
+                  <strong>{factor}:</strong> {formatearTiempo(obj.tiempo)}
+                  {obj.descripcion && <span className="text-muted"> — {obj.descripcion}</span>}
+                </div>
+              ) : null
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="card-body p-4">
-      {/* Información General */}
+
+      {/* Información General y Tiempos */}
       <div className="card mb-4 shadow-sm">
         <div className="card-header bg-primary text-white">
           <h5 className="mb-0">Información General y Tiempos</h5>
@@ -32,9 +56,9 @@ const DetalleRegistroBottlepack305 = ({ registro: r }) => {
                 <div className="card-header">Datos Generales</div>
                 <div className="card-body">
                   <p><strong>Fecha:</strong> {r.fechaInicio} - {r.fechaFin}</p>
-                  <p><strong>Día:</strong> {r.dia} ({r.duracionDias})</p>
-                  <p><strong>Producto:</strong> {r.producto}</p>
-                  <p><strong>Lote:</strong> {r.lote}</p>
+                  <p><strong>Día:</strong> {r.dia || '-'} {r.duracionDias && <>({r.duracionDias})</>}</p>
+                  <p><strong>Producto:</strong> {r.producto || '-'}</p>
+                  <p><strong>Lote:</strong> {r.lote || '-'}</p>
                 </div>
               </div>
             </div>
@@ -68,7 +92,7 @@ const DetalleRegistroBottlepack305 = ({ registro: r }) => {
                     <div
                       className="progress-bar bg-success"
                       role="progressbar"
-                      style={{ width: `${r.eficiencia}%` }}
+                      style={{ width: `${r.eficiencia || 0}%` }}
                     >
                       {formatearPorcentaje(r.eficiencia)}
                     </div>
@@ -91,7 +115,7 @@ const DetalleRegistroBottlepack305 = ({ registro: r }) => {
                     <div
                       className="progress-bar bg-primary"
                       role="progressbar"
-                      style={{ width: `${r.eficacia}%` }}
+                      style={{ width: `${r.eficacia || 0}%` }}
                     >
                       {formatearPorcentaje(r.eficacia)}
                     </div>
@@ -180,7 +204,7 @@ const DetalleRegistroBottlepack305 = ({ registro: r }) => {
                 <td>{formatearTiempo(sumaHorasRetrasadasNoEficiencia)}</td>
               </tr>
               <tr>
-                <td>Envasado Ideal (según horas de soplado)</td>
+                <td>Envasado Ideal (según horas trabajadas)</td>
                 <td>{formatearCantidad(envasadoIdeal)}</td>
               </tr>
               <tr>
@@ -196,48 +220,38 @@ const DetalleRegistroBottlepack305 = ({ registro: r }) => {
         </div>
       </div>
 
-      {/* Resumen de Factores */}
+      {/* Resumen de Factores (TODOS los grupos) */}
       <div className="card mb-4 shadow-sm">
         <div className="card-header bg-warning text-dark">
           <h5 className="mb-0">Resumen de Factores</h5>
         </div>
         <div className="card-body">
           <div className="row g-3">
-            <div className="col-md-6">
-              <div className="card h-100 border-info">
-                <div className="card-header bg-info text-white">No Afectan Eficiencia</div>
-                <div className="card-body">
-                  <p className="small mb-2">
-                    <strong>Total Horas:</strong> {formatearTiempo(r.horasRetrasoNoEficiencia)}
-                  </p>
-                  {Object.entries(r.factoresNoEficiencia || {}).map(([factor, data], j) => (
-                    data.tiempo && (
-                      <div key={j} className="small">
-                        - {factor}: {formatearTiempo(data.tiempo)}
-                      </div>
-                    )
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="col-md-6">
-              <div className="card h-100 border-danger">
-                <div className="card-header bg-danger text-white">Sí Afectan Eficiencia</div>
-                <div className="card-body">
-                  <p className="small mb-2">
-                    <strong>Total Horas:</strong> {formatearTiempo(r.totalHorasRetrasadas)}
-                  </p>
-                  {Object.entries(r.retrasosProduccion || {}).map(([factor, data], j) => (
-                    data.tiempo && (
-                      <div key={j} className="small">
-                        - {factor}: {formatearTiempo(data.tiempo)}
-                      </div>
-                    )
-                  ))}
-                </div>
-              </div>
-            </div>
+            <DetallesRetrasos
+              titulo="Factores que NO afectan eficiencia"
+              data={r.factoresNoEficiencia}
+              color="info"
+            />
+            <DetallesRetrasos
+              titulo="Retrasos por Producción"
+              data={r.retrasosProduccion}
+              color="danger"
+            />
+            <DetallesRetrasos
+              titulo="Retrasos por Control de Calidad"
+              data={r.retrasosCalidadControl}
+              color="warning"
+            />
+            <DetallesRetrasos
+              titulo="Retrasos por Mantenimiento"
+              data={r.retrasosMantenimiento}
+              color="primary"
+            />
+            <DetallesRetrasos
+              titulo="Otros Factores"
+              data={r.otrosFactores}
+              color="secondary"
+            />
           </div>
         </div>
       </div>

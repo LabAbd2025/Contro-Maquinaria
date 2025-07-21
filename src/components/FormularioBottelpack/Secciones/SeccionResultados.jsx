@@ -1,65 +1,106 @@
+import React from "react";
+
 const SeccionResultados = ({ formulario, handleChange }) => {
+  const {
+    horasRetrasoNoEficiencia = "00:00:00",
+    totalHorasRetrasadas = "00:00:00",
+    eficacia = "0",
+    eficiencia = "0",
+    observaciones = "",
+  } = formulario || {};
+
+  // Convierte a número para la barra
+  const eficaciaNum = parseFloat(eficacia) || 0;
+  const eficienciaNum = parseFloat(eficiencia) || 0;
+
   return (
-    <div>
+    <div className="w-100">
       <div className="row g-3 mb-4">
-        <div className="col-md-6">
-          <label className="form-label">
-            Suma de Horas Retrasadas por Factores que NO Afectan Eficiencia
+        <div className="col-12 col-md-6">
+          <label className="form-label fw-semibold">
+            Suma de Horas Retrasadas por Factores que <b>NO</b> Afectan Eficiencia
           </label>
-          <input
-            type="text"
-            className="form-control bg-success text-white"
-            value={formulario.horasRetrasoNoEficiencia}
-            readOnly
-          />
+          <div className="input-group">
+            <span className="input-group-text bg-success text-white fw-bold">
+              <i className="bi bi-hourglass-split"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control bg-success text-white fw-bold"
+              value={horasRetrasoNoEficiencia}
+              readOnly
+              tabIndex={-1}
+              style={{ fontSize: "1.2rem" }}
+            />
+          </div>
         </div>
-        <div className="col-md-6">
-          <label className="form-label">
-            Total de Horas Retrasadas (que SÍ afectan eficiencia)
+        <div className="col-12 col-md-6">
+          <label className="form-label fw-semibold">
+            Total de Horas Retrasadas (que <b>SÍ</b> afectan eficiencia)
           </label>
-          <input
-            type="text"
-            className="form-control bg-danger text-white"
-            value={formulario.totalHorasRetrasadas}
-            readOnly
-          />
+          <div className="input-group">
+            <span className="input-group-text bg-danger text-white fw-bold">
+              <i className="bi bi-exclamation-diamond"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control bg-danger text-white fw-bold"
+              value={totalHorasRetrasadas}
+              readOnly
+              tabIndex={-1}
+              style={{ fontSize: "1.2rem" }}
+            />
+          </div>
         </div>
-        <div className="col-md-6">
-          <label className="form-label">
-            % de Eficacia de Unidades Envasadas vs Programadas
+
+        <div className="col-12 col-md-6">
+          <label className="form-label fw-semibold">
+            % de <b>Eficacia</b> de Unidades Envasadas vs Programadas
           </label>
-          <input
-            type="text"
-            className="form-control bg-info text-white"
-            value={`${formulario.eficacia}%`}
-            readOnly
-          />
+          <div className="progress" style={{ height: 38 }}>
+            <div
+              className="progress-bar bg-info text-dark fw-bold"
+              role="progressbar"
+              style={{
+                width: `${Math.min(eficaciaNum, 100)}%`,
+                fontSize: "1.1rem"
+              }}
+            >
+              {`${eficaciaNum.toFixed(2)}%`}
+            </div>
+          </div>
         </div>
-        <div className="col-md-6">
-          <label className="form-label">
-            % de Eficiencia de Horas Reales vs Trabajadas
+        <div className="col-12 col-md-6">
+          <label className="form-label fw-semibold">
+            % de <b>Eficiencia</b> de Horas Reales vs Trabajadas
           </label>
-          <input
-            type="text"
-            className="form-control bg-warning text-dark"
-            value={`${formulario.eficiencia}%`}
-            readOnly
-          />
+          <div className="progress" style={{ height: 38 }}>
+            <div
+              className="progress-bar bg-warning text-dark fw-bold"
+              role="progressbar"
+              style={{
+                width: `${Math.min(eficienciaNum, 100)}%`,
+                fontSize: "1.1rem"
+              }}
+            >
+              {`${eficienciaNum.toFixed(2)}%`}
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="mb-3">
-        <label className="form-label">Observaciones</label>
+        <label className="form-label fw-semibold">Observaciones</label>
         <textarea
           className="form-control"
           rows={4}
-          value={formulario.observaciones}
-          onChange={(e) => handleChange('observaciones', e.target.value)}
-          placeholder="Razón de disminución de eficiencia y otras observaciones..."
+          value={observaciones}
+          onChange={(e) => handleChange("observaciones", e.target.value)}
+          placeholder="Razón de disminución de eficiencia, detalles de retrasos o cualquier otro comentario relevante…"
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SeccionResultados
+export default SeccionResultados;

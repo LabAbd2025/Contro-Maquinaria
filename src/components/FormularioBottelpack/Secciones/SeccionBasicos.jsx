@@ -5,9 +5,12 @@ import { referenciasProductos } from '../helpers/referenciasProductos'
 const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
   const [productoActivo, setProductoActivo] = useState(null)
 
+  // Opcional: Lista de productos para autocompletar
+  const productosList = Object.keys(referenciasProductos)
+
   return (
     <div className="row g-3">
-      {/* Referencia por producto o mensaje alternativo */}
+      {/* Referencia por producto */}
       <div className="col-12">
         {modelo !== 'bfs_312_215' ? (
           <div className="card border-info mb-4">
@@ -16,30 +19,33 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
             </div>
             <div className="card-body p-3 small">
               <div className="row">
-                {Object.entries(referenciasProductos).map(([nombre, ref]) => (
-                  <div key={nombre} className="col-md-6 mb-2">
-                    <button
-                      className={`btn btn-outline-primary btn-sm w-100 text-start ${productoActivo === nombre ? 'fw-bold' : ''}`}
-                      onClick={() => setProductoActivo(productoActivo === nombre ? null : nombre)}
-                    >
-                      {nombre}
-                    </button>
+                {productosList.map((nombre) => {
+                  const ref = referenciasProductos[nombre]
+                  return (
+                    <div key={nombre} className="col-md-6 mb-2">
+                      <button
+                        className={`btn btn-outline-primary btn-sm w-100 text-start ${productoActivo === nombre ? 'fw-bold' : ''}`}
+                        onClick={() => setProductoActivo(productoActivo === nombre ? null : nombre)}
+                      >
+                        {nombre}
+                      </button>
 
-                    {productoActivo === nombre && (
-                      <div className="mt-2 border rounded bg-light p-2">
-                        <p className="mb-1"><strong>Limpieza:</strong> {ref.limpieza}</p>
-                        <p className="mb-1"><strong>Desinfección:</strong> {ref.desinfeccion}</p>
-                        <p className="mb-1"><strong>Despeje de línea:</strong> {ref.despeje}</p>
-                        <p className="mb-1"><strong>Armado de líneas:</strong> {ref.armado}</p>
-                        <p className="mb-1"><strong>Preparación:</strong> {ref.preparacion}</p>
-                        <p className="mb-1"><strong>Aprobación:</strong> {ref.aprobacion}</p>
-                        <p className="mb-1"><strong>Puesta en marcha:</strong> {ref.puestaEnMarcha}</p>
-                        <hr className="my-1" />
-                        <p className="mb-1"><strong>Unidades por hora:</strong> {ref.unidadesPorHora}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      {productoActivo === nombre && (
+                        <div className="mt-2 border rounded bg-light p-2">
+                          <p className="mb-1"><strong>Limpieza:</strong> {ref.limpieza}</p>
+                          <p className="mb-1"><strong>Desinfección:</strong> {ref.desinfeccion}</p>
+                          <p className="mb-1"><strong>Despeje de línea:</strong> {ref.despeje}</p>
+                          <p className="mb-1"><strong>Armado de líneas:</strong> {ref.armado}</p>
+                          <p className="mb-1"><strong>Preparación:</strong> {ref.preparacion}</p>
+                          <p className="mb-1"><strong>Aprobación:</strong> {ref.aprobacion}</p>
+                          <p className="mb-1"><strong>Puesta en marcha:</strong> {ref.puestaEnMarcha}</p>
+                          <hr className="my-1" />
+                          <p className="mb-1"><strong>Unidades por hora:</strong> {ref.unidadesPorHora}</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -55,11 +61,16 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="date"
           className="form-control"
-          value={formulario.fechaInicio}
+          value={formulario.fechaInicio || ''}
           min={obtenerFechaActual()}
           onChange={(e) => {
             handleChange('fechaInicio', e.target.value)
-            if (formulario.fechaFin && formulario.fechaFin < e.target.value) {
+            // Opcional: limpiar dependientes si se borra la fecha de inicio
+            if (!e.target.value) {
+              handleChange('fechaFin', '')
+              handleChange('dia', '')
+              handleChange('duracionDias', '')
+            } else if (formulario.fechaFin && formulario.fechaFin < e.target.value) {
               handleChange('fechaFin', e.target.value)
             }
           }}
@@ -71,7 +82,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="date"
           className="form-control"
-          value={formulario.fechaFin}
+          value={formulario.fechaFin || ''}
           min={formulario.fechaInicio || obtenerFechaActual()}
           onChange={(e) => handleChange('fechaFin', e.target.value)}
         />
@@ -82,7 +93,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="text"
           className="form-control"
-          value={formulario.duracionDias}
+          value={formulario.duracionDias || ''}
           readOnly
         />
       </div>
@@ -92,13 +103,22 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="text"
           className="form-control"
-          value={formulario.dia}
+          value={formulario.dia || ''}
           readOnly
         />
       </div>
 
       <div className="col-md-6">
         <label className="form-label">Producto</label>
+        {/* Si quieres autocompletar: 
+        <select className="form-control"
+          value={formulario.producto}
+          onChange={(e) => handleChange('producto', e.target.value)}
+        >
+          <option value="">Selecciona producto...</option>
+          {productosList.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+        */}
         <input
           type="text"
           className="form-control"
@@ -113,7 +133,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="text"
           className="form-control"
-          value={formulario.lote}
+          value={formulario.lote || ''}
           onChange={(e) => handleChange('lote', e.target.value)}
           placeholder="Ej: L-001"
         />
@@ -124,7 +144,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="time"
           className="form-control"
-          value={formulario.horaInicio}
+          value={formulario.horaInicio || ''}
           onChange={(e) => handleChange('horaInicio', e.target.value)}
           step="60"
           required
@@ -136,7 +156,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="time"
           className="form-control"
-          value={formulario.horaFinal}
+          value={formulario.horaFinal || ''}
           onChange={(e) => handleChange('horaFinal', e.target.value)}
           step="60"
           required
@@ -148,7 +168,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="text"
           className="form-control bg-light"
-          value={formulario.horasTrabajadas}
+          value={formulario.horasTrabajadas || ''}
           readOnly
         />
       </div>
@@ -158,7 +178,7 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
         <input
           type="text"
           className="form-control bg-light"
-          value={formulario.horasReales}
+          value={formulario.horasReales || ''}
           readOnly
         />
       </div>

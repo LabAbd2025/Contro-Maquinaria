@@ -22,6 +22,8 @@ import 'react-toastify/dist/ReactToastify.css'
 const FormularioBottlepack321 = () => {
   const navigate = useNavigate()
   const [seccionActiva, setSeccionActiva] = useState('basicos')
+  const [guardando, setGuardando] = useState(false)
+  const [showModal, setShowModal] = useState(false)
 
   const [formulario, setFormulario] = useState({
     fechaInicio: '', fechaFin: '', duracionDias: '', dia: '',
@@ -101,17 +103,21 @@ const FormularioBottlepack321 = () => {
     setFormulario(prev => ({ ...prev, [campo]: valor }))
   }
 
-  const handleRetrasoChange = (categoria, factor, valor) => {
+  // Extensible para descripción si luego quieres igual que en los otros modelos
+  const handleRetrasoChange = (categoria, factor, tiempo, descripcion) => {
     setFormulario(prev => ({
       ...prev,
       [categoria]: {
         ...prev[categoria],
-        [factor]: { ...prev[categoria][factor], tiempo: valor }
+        [factor]: { tiempo, descripcion }
       }
     }))
   }
 
+  // Bloquea botón durante el guardado y después
   const guardarRegistro = async () => {
+    if (guardando || showModal) return
+    setGuardando(true)
     try {
       const nuevoRegistro = {
         ...formulario,
@@ -119,16 +125,24 @@ const FormularioBottlepack321 = () => {
         fechaCreacion: new Date().toISOString()
       }
       await guardarRegistroBottlepack('bfs_321_196', nuevoRegistro)
+      setShowModal(true)
       toast.success('✅ Registro guardado exitosamente. ¡Buen trabajo!')
-      navigate('/registros/bsf_321_196')
     } catch (error) {
       console.error(error)
       toast.error('❌ Error al guardar. Por favor, intenta nuevamente.')
+    } finally {
+      setGuardando(false)
     }
   }
 
   const limpiarFormulario = () => {
     setFormulario(prev => ({ ...prev, observaciones: '' }))
+  }
+
+  // Modal igual que en los otros formularios
+  const handleModalClose = () => {
+    setShowModal(false)
+    navigate('/registros/bfs_321_196')
   }
 
   return (
@@ -174,12 +188,48 @@ const FormularioBottlepack321 = () => {
           )}
 
           <div className="d-flex gap-2 mt-4">
-            <button className="btn btn-primary btn-lg" onClick={guardarRegistro}>Guardar Registro</button>
-            <button className="btn btn-outline-secondary btn-lg" onClick={limpiarFormulario}>Limpiar Formulario</button>
-            <button className="btn btn-info btn-lg" onClick={() => navigate('/registros/bsf_321_196')}>Ver Registros</button>
+            <button
+              className="btn btn-primary btn-lg"
+              onClick={guardarRegistro}
+              disabled={guardando || showModal}
+            >
+              {guardando ? 'Guardando...' : 'Guardar Registro'}
+            </button>
+            <button
+              className="btn btn-outline-secondary btn-lg"
+              onClick={limpiarFormulario}
+              disabled={guardando || showModal}
+            >
+              Limpiar Formulario
+            </button>
+            <button
+              className="btn btn-info btn-lg"
+              onClick={() => navigate('/registros/bfs_321_196')}
+              disabled={guardando}
+            >
+              Ver Registros
+            </button>
           </div>
         </div>
       </div>
+      {/* Modal de éxito */}
+      {showModal && (
+        <div className="modal show fade" style={{ display: 'block', background: 'rgba(0,0,0,0.4)' }} tabIndex="-1" role="dialog">
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content shadow-lg">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title">¡Registro Exitoso!</h5>
+              </div>
+              <div className="modal-body">
+                <p>El registro fue guardado exitosamente.<br />Puedes consultar los registros en la lista.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-success" onClick={handleModalClose}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
     </div>
   )
