@@ -38,9 +38,14 @@ const ListaRegistrosBottlepack305 = () => {
 
   useEffect(() => {
     const cargarRegistros = async () => {
+      setLoading(true)
       try {
-        const data = await obtenerRegistrosBottlepack('bfs_305_183')
-        const registrosMapeados = data.map(mapearRegistro)
+        const respuesta = await obtenerRegistrosBottlepack('bfs_305_183')
+        // Detecta si es un array directo o viene como { data: [...] }
+        const lista = Array.isArray(respuesta)
+          ? respuesta
+          : (Array.isArray(respuesta?.data) ? respuesta.data : [])
+        const registrosMapeados = lista.map(mapearRegistro)
         setRegistros(registrosMapeados)
       } catch (err) {
         console.error('Error al obtener registros:', err)
@@ -49,7 +54,6 @@ const ListaRegistrosBottlepack305 = () => {
         setLoading(false)
       }
     }
-
     cargarRegistros()
   }, [])
 
