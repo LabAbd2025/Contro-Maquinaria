@@ -10,6 +10,7 @@ const ListaRegistrosBottlepack321 = () => {
   const [error, setError] = useState(null)
   const [registroActivo, setRegistroActivo] = useState(null)
 
+  // Normalizador camelCase
   const mapearRegistro = (r) => ({
     ...r,
     fechaInicio: r.fecha_inicio,
@@ -38,12 +39,15 @@ const ListaRegistrosBottlepack321 = () => {
 
   useEffect(() => {
     const cargarRegistros = async () => {
+      setLoading(true)
       try {
-        const data = await obtenerRegistrosBottlepack('bfs_321_196')
-        const registrosMapeados = data.map(mapearRegistro)
+        const respuesta = await obtenerRegistrosBottlepack('bfs_321_196')
+        const lista = Array.isArray(respuesta)
+          ? respuesta
+          : (Array.isArray(respuesta?.data) ? respuesta.data : [])
+        const registrosMapeados = lista.map(mapearRegistro)
         setRegistros(registrosMapeados)
-      } catch (err) {
-        console.error('Error al obtener registros:', err)
+      } catch {
         setError('No se pudieron cargar los registros')
       } finally {
         setLoading(false)
@@ -57,7 +61,7 @@ const ListaRegistrosBottlepack321 = () => {
   }
 
   return (
-    <div className="vh-100 vw-100 p-0 m-0">
+    <div className="vh-100 vw-100 p-0 m-0 bg-light">
       <div className="container-fluid p-0">
         <div className="text-center py-3 bg-primary text-white">
           <h2 className="fw-bold m-0">Registros Bottlepack 321</h2>
@@ -103,7 +107,6 @@ const ListaRegistrosBottlepack321 = () => {
                         {registroActivo === i ? 'Ocultar Detalles' : 'Ver Detalles'}
                       </button>
                     </div>
-
                     {registroActivo === i && (
                       <div className="mt-3">
                         <DetalleRegistroBottlepack321 registro={r} />
