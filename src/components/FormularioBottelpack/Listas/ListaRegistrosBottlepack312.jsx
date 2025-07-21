@@ -10,7 +10,7 @@ const ListaRegistrosBottlepack312 = () => {
   const [error, setError] = useState(null)
   const [registroExpandido, setRegistroExpandido] = useState(null)
 
-  // Normaliza campos a camelCase para DetalleRegistroBottlepack312
+  // Normaliza a camelCase para DetalleRegistroBottlepack312
   const mapearRegistro = (r) => ({
     ...r,
     fechaInicio: r.fecha_inicio,
@@ -41,10 +41,11 @@ const ListaRegistrosBottlepack312 = () => {
     const cargarRegistros = async () => {
       setLoading(true)
       try {
-        const data = await obtenerRegistrosBottlepack('bfs_312_215')
-        const registrosMapeados = Array.isArray(data)
-          ? data.reverse().map(mapearRegistro)
-          : []
+        const respuesta = await obtenerRegistrosBottlepack('bfs_312_215')
+        const lista = Array.isArray(respuesta)
+          ? respuesta
+          : (Array.isArray(respuesta?.data) ? respuesta.data : [])
+        const registrosMapeados = lista.map(mapearRegistro)
         setRegistros(registrosMapeados)
       } catch {
         setError('No se pudieron cargar los registros')
