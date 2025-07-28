@@ -8,15 +8,23 @@ import {
 } from '../../../components/FormularioBottelpack/helpers/calculos'
 
 const DetalleRegistroBottlepack312 = ({ registro: r }) => {
-  const sumaHorasRetrasadasNoEficiencia = calcularSumaHorasRetrasadas(r.factores_no_eficiencia)
-  const envasadoIdeal = calcularEnvasadoIdeal(r.horas_trabajadas, r.cantidad_ideal_por_hora)
-  const horasIdeal = calcularHorasIdeal(r.cantidad_envasada, r.cantidad_ideal_por_hora)
+  // Compatibilidad con registros snake_case o camelCase
+  const factoresNoEficiencia = r.factores_no_eficiencia || r.factoresNoEficiencia;
+  const retrasosProduccion = r.retrasos_produccion || r.retrasosProduccion;
+  const retrasosCalidadControl = r.retrasos_calidad_control || r.retrasosCalidadControl;
+  const retrasosMantenimiento = r.retrasos_mantenimiento || r.retrasosMantenimiento;
+  const otrosFactores = r.otros_factores || r.otrosFactores;
+  const horasIdeales = r.horas_ideales || r.horasIdeales || calcularHorasIdeal(r.cantidad_envasada || r.cantidadEnvasada, r.cantidad_ideal_por_hora || r.cantidadIdealPorHora);
+
+  // Cálculos de métricas adicionales
+  const sumaHorasRetrasadasNoEficiencia = calcularSumaHorasRetrasadas(factoresNoEficiencia);
+  const envasadoIdeal = calcularEnvasadoIdeal(r.horas_trabajadas || r.horasTrabajadas, r.cantidad_ideal_por_hora || r.cantidadIdealPorHora);
   const totalHorasRetrasadas = calcularSumaHorasRetrasadas({
-    ...r.retrasos_produccion,
-    ...r.retrasos_calidad_control,
-    ...r.retrasos_mantenimiento,
-    ...r.otros_factores
-  })
+    ...retrasosProduccion,
+    ...retrasosCalidadControl,
+    ...retrasosMantenimiento,
+    ...otrosFactores
+  });
 
   // Componente para mostrar cada grupo de factores/retrasos con descripción
   const GrupoRetrasos = ({ titulo, data, color }) => (
@@ -53,8 +61,8 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
               <div className="card border-primary h-100">
                 <div className="card-header">Datos Generales</div>
                 <div className="card-body">
-                  <p><strong className="text-danger">Fecha:</strong> {r.fecha_inicio} - {r.fecha_fin}</p>
-                  <p><strong className="text-danger">Día:</strong> {r.dia || '-'} {r.duracion_dias && <>({r.duracion_dias})</>}</p>
+                  <p><strong className="text-danger">Fecha:</strong> {r.fecha_inicio || r.fechaInicio} - {r.fecha_fin || r.fechaFin}</p>
+                  <p><strong className="text-danger">Día:</strong> {r.dia || '-'} {r.duracion_dias || r.duracionDias ? <>({r.duracion_dias || r.duracionDias})</> : null}</p>
                   <p><strong className="text-danger">Producto:</strong> {r.producto || '-'}</p>
                   <p><strong className="text-danger">Lote:</strong> {r.lote || '-'}</p>
                 </div>
@@ -64,10 +72,10 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
               <div className="card border-primary h-100">
                 <div className="card-header">Tiempos</div>
                 <div className="card-body">
-                  <p><strong>Hora Inicio:</strong> {formatearTiempo(r.hora_inicio)}</p>
-                  <p><strong>Hora Final:</strong> {formatearTiempo(r.hora_final)}</p>
-                  <p><strong>Horas Trabajadas:</strong> {formatearTiempo(r.horas_trabajadas)}</p>
-                  <p><strong>Horas Reales:</strong> {formatearTiempo(r.horas_reales)}</p>
+                  <p><strong>Hora Inicio:</strong> {formatearTiempo(r.hora_inicio || r.horaInicio)}</p>
+                  <p><strong>Hora Final:</strong> {formatearTiempo(r.hora_final || r.horaFinal)}</p>
+                  <p><strong>Horas Trabajadas:</strong> {formatearTiempo(r.horas_trabajadas || r.horasTrabajadas)}</p>
+                  <p><strong>Horas Reales:</strong> {formatearTiempo(r.horas_reales || r.horasReales)}</p>
                 </div>
               </div>
             </div>
@@ -99,7 +107,7 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
                     Horas Reales / Horas Trabajadas
                   </div>
                   <div className="text-center fw-bold">
-                    {formatearTiempo(r.horas_reales)} / {formatearTiempo(r.horas_trabajadas)}
+                    {formatearTiempo(r.horas_reales || r.horasReales)} / {formatearTiempo(r.horas_trabajadas || r.horasTrabajadas)}
                   </div>
                 </div>
               </div>
@@ -121,7 +129,7 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
                     Cantidad Envasada / Cantidad Programada
                   </div>
                   <div className="text-center fw-bold">
-                    {formatearCantidad(r.cantidad_envasada)} / {formatearCantidad(r.cantidad_programada_diaria)}
+                    {formatearCantidad(r.cantidad_envasada || r.cantidadEnvasada)} / {formatearCantidad(r.cantidad_programada_diaria || r.cantidadProgramadaDiaria)}
                   </div>
                 </div>
               </div>
@@ -144,7 +152,9 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
                       <td>Eficiencia</td>
                       <td className="small">
                         (Horas Reales / Horas Trabajadas) × 100 <br />
-                        <span className="text-muted">({formatearTiempo(r.horas_reales)} / {formatearTiempo(r.horas_trabajadas)})</span>
+                        <span className="text-muted">
+                          ({formatearTiempo(r.horas_reales || r.horasReales)} / {formatearTiempo(r.horas_trabajadas || r.horasTrabajadas)})
+                        </span>
                       </td>
                       <td>{formatearPorcentaje(r.eficiencia)}</td>
                     </tr>
@@ -152,32 +162,42 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
                       <td>Eficacia</td>
                       <td className="small">
                         (Cantidad Envasada / Cantidad Programada) × 100 <br />
-                        <span className="text-muted">({formatearCantidad(r.cantidad_envasada)} / {formatearCantidad(r.cantidad_programada_diaria)})</span>
+                        <span className="text-muted">
+                          ({formatearCantidad(r.cantidad_envasada || r.cantidadEnvasada)} / {formatearCantidad(r.cantidad_programada_diaria || r.cantidadProgramadaDiaria)})
+                        </span>
                       </td>
                       <td>{formatearPorcentaje(r.eficacia)}</td>
                     </tr>
                     <tr>
                       <td>Cantidad Ideal por Hora</td>
                       <td className="small">Valor estándar establecido</td>
-                      <td>{formatearCantidad(r.cantidad_ideal_por_hora)}</td>
+                      <td>{formatearCantidad(r.cantidad_ideal_por_hora || r.cantidadIdealPorHora)}</td>
                     </tr>
                     <tr>
                       <td>Cantidad Envasada Teórica</td>
                       <td className="small">
                         Horas Trabajadas × Cantidad Ideal por Hora <br />
-                        <span className="text-muted">{formatearTiempo(r.horas_trabajadas)} × {formatearCantidad(r.cantidad_ideal_por_hora)}</span>
+                        <span className="text-muted">{formatearTiempo(r.horas_trabajadas || r.horasTrabajadas)} × {formatearCantidad(r.cantidad_ideal_por_hora || r.cantidadIdealPorHora)}</span>
                       </td>
-                      <td>{formatearCantidad(r.cantidad_envasada_teorica)}</td>
+                      <td>{formatearCantidad(r.cantidad_envasada_teorica || r.cantidadEnvasadaTeorica)}</td>
+                    </tr>
+                    <tr>
+                      <td>Horas Ideales</td>
+                      <td className="small">
+                        Cantidad Envasada / Cantidad Ideal por Hora <br />
+                        <span className="text-muted">{formatearCantidad(r.cantidad_envasada || r.cantidadEnvasada)} / {formatearCantidad(r.cantidad_ideal_por_hora || r.cantidadIdealPorHora)}</span>
+                      </td>
+                      <td>{formatearTiempo(horasIdeales)}</td>
                     </tr>
                     <tr>
                       <td>Cantidad Soplada Aprobada</td>
                       <td className="small">Valor medido en producción</td>
-                      <td>{formatearCantidad(r.cantidad_soplada_aprobada)}</td>
+                      <td>{formatearCantidad(r.cantidad_soplada_aprobada || r.cantidadSopladaAprobada)}</td>
                     </tr>
                     <tr>
                       <td>Materia Prima Utilizada (KGS)</td>
                       <td className="small">Valor medido en producción</td>
-                      <td>{formatearCantidad(r.cantidad_materia_prima)}</td>
+                      <td>{formatearCantidad(r.cantidad_materia_prima || r.cantidadMateriaPrima)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -204,8 +224,8 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
                 <td>{formatearCantidad(envasadoIdeal)}</td>
               </tr>
               <tr>
-                <td>Horas Ideal (según cantidad envasada)</td>
-                <td>{formatearTiempo(horasIdeal)}</td>
+                <td>Horas Ideales (según cantidad envasada)</td>
+                <td>{formatearTiempo(horasIdeales)}</td>
               </tr>
               <tr>
                 <td>Total de Horas Retrasadas</td>
@@ -225,27 +245,27 @@ const DetalleRegistroBottlepack312 = ({ registro: r }) => {
           <div className="row g-3">
             <GrupoRetrasos
               titulo="Factores que NO afectan eficiencia"
-              data={r.factores_no_eficiencia}
+              data={factoresNoEficiencia}
               color="info"
             />
             <GrupoRetrasos
               titulo="Retrasos por Producción"
-              data={r.retrasos_produccion}
+              data={retrasosProduccion}
               color="danger"
             />
             <GrupoRetrasos
               titulo="Retrasos por Control de Calidad"
-              data={r.retrasos_calidad_control}
+              data={retrasosCalidadControl}
               color="warning"
             />
             <GrupoRetrasos
               titulo="Retrasos por Mantenimiento"
-              data={r.retrasos_mantenimiento}
+              data={retrasosMantenimiento}
               color="primary"
             />
             <GrupoRetrasos
               titulo="Otros Factores"
-              data={r.otros_factores}
+              data={otrosFactores}
               color="secondary"
             />
           </div>

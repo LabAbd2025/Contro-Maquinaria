@@ -19,6 +19,7 @@ const ListaRegistrosBottlepack312 = () => {
     horaFinal: r.hora_final,
     horasTrabajadas: r.horas_trabajadas,
     horasReales: r.horas_reales,
+    horasIdeales: r.horas_ideales,
     eficiencia: r.eficiencia,
     eficacia: r.eficacia,
     cantidadEnvasada: r.cantidad_envasada,
@@ -34,6 +35,8 @@ const ListaRegistrosBottlepack312 = () => {
     retrasosMantenimiento: r.retrasos_mantenimiento,
     retrasosCalidadControl: r.retrasos_calidad_control,
     otrosFactores: r.otros_factores,
+    retrasosASA: r.retrasos_asa,
+    retrasosAlmacen: r.retrasos_almacen,
     duracionDias: r.duracion_dias,
   })
 
@@ -45,7 +48,8 @@ const ListaRegistrosBottlepack312 = () => {
         const lista = Array.isArray(respuesta)
           ? respuesta
           : (Array.isArray(respuesta?.data) ? respuesta.data : [])
-        const registrosMapeados = lista.map(mapearRegistro)
+        // Invierte la lista para mostrar el registro más reciente primero
+        const registrosMapeados = lista.map(mapearRegistro).reverse()
         setRegistros(registrosMapeados)
       } catch {
         setError('No se pudieron cargar los registros')
@@ -62,7 +66,6 @@ const ListaRegistrosBottlepack312 = () => {
 
   return (
     <div className="vh-100 vw-100 p-0 m-0 bg-light">
-      {/* Encabezado sticky y responsivo */}
       <div className="sticky-top shadow-sm">
         <div className="container-fluid bg-primary text-white py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between">
           <h2 className="fw-bold mb-2 mb-md-0">Registros Bottlepack 312</h2>
@@ -86,7 +89,7 @@ const ListaRegistrosBottlepack312 = () => {
           ) : registros.length === 0 ? (
             <div className="col-12 text-center p-5">
               <div className="alert alert-info mb-0">
-                No hay registros guardados todavía.
+                No hay registros guardados.
               </div>
             </div>
           ) : (

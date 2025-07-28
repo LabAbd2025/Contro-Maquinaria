@@ -4,9 +4,8 @@ import { referenciasProductos } from '../helpers/referenciasProductos'
 
 const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
   const [productoActivo, setProductoActivo] = useState(null)
-
-  // Opcional: Lista de productos para autocompletar
   const productosList = Object.keys(referenciasProductos)
+  const refProducto = referenciasProductos[formulario.producto]
 
   return (
     <div className="row g-3">
@@ -26,10 +25,10 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
                       <button
                         className={`btn btn-outline-primary btn-sm w-100 text-start ${productoActivo === nombre ? 'fw-bold' : ''}`}
                         onClick={() => setProductoActivo(productoActivo === nombre ? null : nombre)}
+                        type="button"
                       >
                         {nombre}
                       </button>
-
                       {productoActivo === nombre && (
                         <div className="mt-2 border rounded bg-light p-2">
                           <p className="mb-1"><strong>Limpieza:</strong> {ref.limpieza}</p>
@@ -65,7 +64,6 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
           min={obtenerFechaActual()}
           onChange={(e) => {
             handleChange('fechaInicio', e.target.value)
-            // Opcional: limpiar dependientes si se borra la fecha de inicio
             if (!e.target.value) {
               handleChange('fechaFin', '')
               handleChange('dia', '')
@@ -110,21 +108,22 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
 
       <div className="col-md-6">
         <label className="form-label">Producto</label>
-        {/* Si quieres autocompletar: 
-        <select className="form-control"
-          value={formulario.producto}
-          onChange={(e) => handleChange('producto', e.target.value)}
-        >
-          <option value="">Selecciona producto...</option>
-          {productosList.map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
-        */}
         <input
           type="text"
           className="form-control"
-          value={formulario.producto}
-          onChange={(e) => handleChange('producto', e.target.value)}
-          placeholder="Ej: Solución X"
+          value={formulario.producto || ''}
+          onChange={(e) => {
+            const nombre = e.target.value
+            handleChange('producto', nombre)
+            // Si existe, autocompleta estándar/hora, si no, limpia el campo
+            if (referenciasProductos[nombre]) {
+              handleChange('cantidadIdealPorHora', referenciasProductos[nombre].unidadesPorHora)
+            } else {
+              handleChange('cantidadIdealPorHora', '')
+            }
+          }}
+          placeholder="Nombre del producto"
+          required
         />
       </div>
 
@@ -161,10 +160,11 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
           step="60"
           required
         />
+
       </div>
 
       <div className="col-md-6">
-        <label className="form-label">Horas Trabajadas</label>
+        <label className="form-label">Horas Trabajadas (total)</label>
         <input
           type="text"
           className="form-control bg-light"
@@ -174,14 +174,31 @@ const SeccionBasicos = ({ formulario, handleChange, modelo }) => {
       </div>
 
       <div className="col-md-6">
-        <label className="form-label">Horas Reales</label>
+        <label className="form-label">Horas Ideales (según producción)</label>
         <input
           type="text"
           className="form-control bg-light"
-          value={formulario.horasReales || ''}
+          value={
+            formulario.horasIdeales && formulario.horasIdeales !== ''
+              ? formulario.horasIdeales
+              : (!formulario.cantidadEnvasada || !formulario.cantidadIdealPorHora
+                ? 'Completa Envasada y Estándar/hora'
+                : '00:00:00')
+          }
           readOnly
+          placeholder="Se calcula según Cantidad Envasada y ritmo/hora"
         />
+
       </div>
+
+      {/* Opcional: muestra el estándar por hora seleccionado */}
+      {formulario.producto && refProducto && (
+        <div className="col-12">
+          <div className="alert alert-info my-2 py-2">
+            <strong>Estándar por hora del producto seleccionado:</strong> {refProducto.unidadesPorHora} unidades/hora
+          </div>
+        </div>
+      )}
     </div>
   )
 }

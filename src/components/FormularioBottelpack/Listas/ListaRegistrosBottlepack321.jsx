@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DetalleRegistroBottlepack321 from '../Detalles/DetalleRegistroBottlepack321'
 import { obtenerRegistrosBottlepack } from '../../../services/produccionService'
+import { parseJSONField } from '../../../components/FormularioBottelpack/helpers/utils'
 
 const ListaRegistrosBottlepack321 = () => {
   const navigate = useNavigate()
@@ -10,7 +11,7 @@ const ListaRegistrosBottlepack321 = () => {
   const [error, setError] = useState(null)
   const [registroActivo, setRegistroActivo] = useState(null)
 
-  // Normalizador camelCase
+  // Helper de mapeo robusto para todos los campos actuales
   const mapearRegistro = (r) => ({
     ...r,
     fechaInicio: r.fecha_inicio,
@@ -19,7 +20,9 @@ const ListaRegistrosBottlepack321 = () => {
     horaFinal: r.hora_final,
     horasTrabajadas: r.horas_trabajadas,
     horasReales: r.horas_reales,
+    horasIdeales: r.horas_ideales,
     eficiencia: r.eficiencia,
+    eficienciaReal: r.eficiencia_real,
     eficacia: r.eficacia,
     cantidadEnvasada: r.cantidad_envasada,
     cantidadProgramadaDiaria: r.cantidad_programada_diaria,
@@ -29,17 +32,24 @@ const ListaRegistrosBottlepack321 = () => {
     cantidadMateriaPrima: r.cantidad_materia_prima,
     horasRetrasoNoEficiencia: r.horas_retraso_no_eficiencia,
     totalHorasRetrasadas: r.total_horas_retrasadas,
-    factoresNoEficiencia: r.factores_no_eficiencia,
-    retrasosProduccion: r.retrasos_produccion,
-    retrasosMantenimiento: r.retrasos_mantenimiento,
-    retrasosCalidadControl: r.retrasos_calidad_control,
-    otrosFactores: r.otros_factores,
+    factoresNoEficiencia: parseJSONField(r.factores_no_eficiencia),
+    retrasosProduccion: parseJSONField(r.retrasos_produccion),
+    retrasosCalidadControl: parseJSONField(r.retrasos_calidad_control),
+    retrasosMantenimiento: parseJSONField(r.retrasos_mantenimiento),
+    retrasosASA: parseJSONField(r.retrasos_asa),
+    retrasosAlmacen: parseJSONField(r.retrasos_almacen),
+    otrosFactores: parseJSONField(r.otros_factores),
     duracionDias: r.duracion_dias,
+    observaciones: r.observaciones,
+    producto: r.producto,
+    lote: r.lote,
+    dia: r.dia
   })
 
   useEffect(() => {
     const cargarRegistros = async () => {
       setLoading(true)
+      setError(null)
       try {
         const respuesta = await obtenerRegistrosBottlepack('bfs_321_196')
         const lista = Array.isArray(respuesta)
@@ -73,11 +83,16 @@ const ListaRegistrosBottlepack321 = () => {
         <div className="row g-0">
           {loading ? (
             <div className="col-12 text-center p-5">
+              <div className="spinner-border text-primary mb-3" />
               <span className="text-muted">Cargando registros...</span>
             </div>
           ) : error ? (
             <div className="col-12 text-center p-5">
               <span className="text-danger">{error}</span>
+              <br />
+              <button className="btn btn-outline-secondary mt-3" onClick={() => window.location.reload()}>
+                Reintentar
+              </button>
             </div>
           ) : registros.length === 0 ? (
             <div className="col-12">
@@ -96,8 +111,13 @@ const ListaRegistrosBottlepack321 = () => {
                       <div>
                         <h5 className="mb-1">Registro #{i + 1} - {r.fechaInicio}</h5>
                         <p className="mb-0 small text-muted">
-                          Producto: <strong>{r.producto}</strong> | Lote: <strong>{r.lote}</strong><br />
-                          Horas trabajadas: <strong>{r.horasTrabajadas}</strong> | Eficiencia: <strong>{r.eficiencia}%</strong>
+                          Producto: <strong>{r.producto || '-'}</strong> | Lote: <strong>{r.lote || '-'}</strong><br />
+                          Horas trabajadas: <strong>{r.horasTrabajadas || '-'}</strong> | Eficiencia industrial: <strong>{r.eficiencia ?? '0'}%</strong>
+                          {r.eficienciaReal && (
+                            <> | Eficiencia real: <strong>{r.eficienciaReal}%</strong></>
+                          )}
+                          <br />
+                          Eficacia: <strong>{r.eficacia ?? '0'}%</strong>
                         </p>
                       </div>
                       <button

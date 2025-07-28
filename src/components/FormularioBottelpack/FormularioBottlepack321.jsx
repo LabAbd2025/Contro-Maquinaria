@@ -6,6 +6,7 @@ import {
   calcularEficacia,
   calcularEficiencia,
   calcularHorasNoEficientes,
+  calcularHorasIdeal,
   obtenerNombreDia,
   restarTiempos,
   obtenerFechaActual
@@ -19,23 +20,33 @@ import { FaHome } from 'react-icons/fa'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+// Estado inicial del formulario
+const FORMULARIO_INICIAL = {
+  fechaInicio: '', fechaFin: '', duracionDias: '', dia: '',
+  producto: '', lote: '', horaInicio: '', horaFinal: '',
+  horasTrabajadas: '', horasReales: '', horasIdeales: '',
+  cantidadIdealPorHora: '',
+  cantidadProgramadaDiaria: '', cantidadEnvasada: '', cantidadEnvasadaTeorica: '',
+  cantidadSopladaAprobada: '', cantidadMateriaPrima: '',
+  factoresNoEficiencia: {},
+  retrasosProduccion: {},
+  retrasosCalidadControl: {},
+  retrasosMantenimiento: {},
+  retrasosASA: {},
+  retrasosAlmacen: {},
+  otrosFactores: {},
+  totalHorasRetrasadas: '', horasRetrasoNoEficiencia: '',
+  eficacia: '', eficiencia: '', observaciones: ''
+}
+
 const FormularioBottlepack321 = () => {
   const navigate = useNavigate()
   const [seccionActiva, setSeccionActiva] = useState('basicos')
   const [guardando, setGuardando] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [formulario, setFormulario] = useState({ ...FORMULARIO_INICIAL })
 
-  const [formulario, setFormulario] = useState({
-    fechaInicio: '', fechaFin: '', duracionDias: '', dia: '',
-    producto: '', lote: '', horaInicio: '', horaFinal: '',
-    horasTrabajadas: '', horasReales: '', cantidadIdealPorHora: '',
-    cantidadProgramadaDiaria: '', cantidadEnvasada: '', cantidadEnvasadaTeorica: '',
-    cantidadSopladaAprobada: '', cantidadMateriaPrima: '', factoresNoEficiencia: {},
-    retrasosProduccion: {}, retrasosCalidadControl: {}, retrasosMantenimiento: {},
-    otrosFactores: {}, totalHorasRetrasadas: '', horasRetrasoNoEficiencia: '',
-    eficacia: '', eficiencia: '', observaciones: ''
-  })
-
+  // Calcula día, horas trabajadas y duración automáticamente
   useEffect(() => {
     if (formulario.fechaInicio) {
       const dia = obtenerNombreDia(formulario.fechaInicio)
@@ -54,56 +65,79 @@ const FormularioBottlepack321 = () => {
   }, [formulario.fechaInicio, formulario.fechaFin, formulario.horaInicio, formulario.horaFinal])
 
   useEffect(() => {
+    const jornada = calcularDuracionEntreHoras(formulario.horaInicio, formulario.horaFinal)
     const horasNoEficiencia = calcularHorasNoEficientes(formulario.factoresNoEficiencia)
     const todosRetrasos = {
       ...formulario.retrasosProduccion,
       ...formulario.retrasosCalidadControl,
       ...formulario.retrasosMantenimiento,
+      ...formulario.retrasosASA,
+      ...formulario.retrasosAlmacen,
       ...formulario.otrosFactores
     }
     const totalHorasRetrasadas = calcularHorasNoEficientes(todosRetrasos)
-    const horasReales = restarTiempos(
-      restarTiempos(formulario.horasTrabajadas, horasNoEficiencia),
-      totalHorasRetrasadas
+    const horasTrabajadas = restarTiempos(jornada, horasNoEficiencia)
+    const horasReales = restarTiempos(horasTrabajadas, totalHorasRetrasadas)
+
+    // CALCULO DE HORAS IDEALES (mejorado)
+    const horasIdeales = calcularHorasIdeal(
+      formulario.cantidadEnvasada,
+      formulario.cantidadIdealPorHora
     )
-    const eficiencia = calcularEficiencia(horasReales, formulario.horasTrabajadas)
+
+    // Para debug:
+    console.log('[DEBUG] Horas ideales:', {
+      cantidadEnvasada: formulario.cantidadEnvasada,
+      cantidadIdealPorHora: formulario.cantidadIdealPorHora,
+      horasIdeales
+    })
+
+    const eficiencia = calcularEficiencia(horasIdeales, horasTrabajadas)
     const eficacia = calcularEficacia(formulario.cantidadEnvasada, formulario.cantidadProgramadaDiaria)
 
     setFormulario(prev => ({
       ...prev,
+      horasTrabajadas,
       horasRetrasoNoEficiencia: horasNoEficiencia,
       totalHorasRetrasadas,
       horasReales,
+      horasIdeales,
       eficiencia,
       eficacia
     }))
   }, [
-    formulario.horasTrabajadas,
+    formulario.horaInicio,
+    formulario.horaFinal,
     formulario.factoresNoEficiencia,
     formulario.retrasosProduccion,
     formulario.retrasosCalidadControl,
     formulario.retrasosMantenimiento,
+    formulario.retrasosASA,
+    formulario.retrasosAlmacen,
     formulario.otrosFactores,
     formulario.cantidadEnvasada,
+    formulario.cantidadIdealPorHora,
     formulario.cantidadProgramadaDiaria
   ])
 
+  // Actualiza valores del formulario
   const handleChange = (campo, valor) => {
+
     if ((campo === 'fechaInicio' || campo === 'fechaFin') && valor) {
       const fechaActual = obtenerFechaActual()
       if (valor < fechaActual) {
-        toast.warn('⚠️ No se pueden seleccionar fechas anteriores a hoy')
+        toast.warn('No se pueden seleccionar fechas anteriores a hoy')
         return
       }
       if (campo === 'fechaFin' && valor < formulario.fechaInicio) {
-        toast.warn('⚠️ La fecha de fin no puede ser anterior a la de inicio')
+        toast.warn('La fecha de fin no puede ser anterior a la de inicio')
         return
       }
     }
+    console.log(`[HANDLE CHANGE] campo: ${campo}, valor: ${valor}`)
     setFormulario(prev => ({ ...prev, [campo]: valor }))
   }
 
-  // Extensible para descripción si luego quieres igual que en los otros modelos
   const handleRetrasoChange = (categoria, factor, tiempo, descripcion) => {
     setFormulario(prev => ({
       ...prev,
@@ -114,32 +148,75 @@ const FormularioBottlepack321 = () => {
     }))
   }
 
-  // Bloquea botón durante el guardado y después
+  const validarFormulario = () => {
+    if (!formulario.fechaInicio || !formulario.horaInicio || !formulario.horaFinal) {
+      toast.error('Completa Fecha de Inicio, Hora Inicio y Hora Final')
+      return false
+    }
+    if (!formulario.producto) {
+      toast.error('Debes ingresar el Producto')
+      return false
+    }
+    if (!formulario.cantidadProgramadaDiaria || !formulario.cantidadEnvasada || !formulario.cantidadIdealPorHora) {
+      toast.error('Completa cantidades programada, envasada y estándar por hora')
+      return false
+    }
+    return true
+  }
+
+  // === ACTUALIZADO: Solo manda campos existentes en la BD ===
   const guardarRegistro = async () => {
+    console.log('[ANTES DE GUARDAR]', formulario)
     if (guardando || showModal) return
+    if (!validarFormulario()) return
     setGuardando(true)
     try {
-      const nuevoRegistro = {
-        ...formulario,
-        id: Date.now(),
-        fechaCreacion: new Date().toISOString()
+      const registro = {
+        fechaInicio: formulario.fechaInicio,
+        fechaFin: formulario.fechaFin,
+        duracionDias: formulario.duracionDias,
+        dia: formulario.dia,
+        producto: formulario.producto,
+        lote: formulario.lote,
+        horaInicio: formulario.horaInicio,
+        horaFinal: formulario.horaFinal,
+        horasTrabajadas: formulario.horasTrabajadas,
+        horasReales: formulario.horasReales,
+        cantidadIdealPorHora: formulario.cantidadIdealPorHora,
+        cantidadProgramadaDiaria: formulario.cantidadProgramadaDiaria,
+        cantidadEnvasada: formulario.cantidadEnvasada,
+        cantidadEnvasadaTeorica: formulario.cantidadEnvasadaTeorica,
+        cantidadSopladaAprobada: formulario.cantidadSopladaAprobada,
+        cantidadMateriaPrima: formulario.cantidadMateriaPrima,
+        factoresNoEficiencia: formulario.factoresNoEficiencia,
+        retrasosProduccion: formulario.retrasosProduccion,
+        retrasosCalidadControl: formulario.retrasosCalidadControl,
+        retrasosMantenimiento: formulario.retrasosMantenimiento,
+        retrasosASA: formulario.retrasosASA,
+        retrasosAlmacen: formulario.retrasosAlmacen,
+        otrosFactores: formulario.otrosFactores,
+        totalHorasRetrasadas: formulario.totalHorasRetrasadas,
+        horasRetrasoNoEficiencia: formulario.horasRetrasoNoEficiencia,
+        eficacia: formulario.eficacia,
+        eficiencia: formulario.eficiencia,
+        observaciones: formulario.observaciones
       }
-      await guardarRegistroBottlepack('bfs_321_196', nuevoRegistro)
+      console.log('Registrando datos:', registro)
+      await guardarRegistroBottlepack('bfs_321_196', registro)
       setShowModal(true)
-      toast.success('✅ Registro guardado exitosamente. ¡Buen trabajo!')
+      toast.success('Registro guardado exitosamente. ¡Buen trabajo!')
     } catch (error) {
       console.error(error)
-      toast.error('❌ Error al guardar. Por favor, intenta nuevamente.')
+      toast.error('Error al guardar. Por favor, intenta nuevamente.')
     } finally {
       setGuardando(false)
     }
   }
 
   const limpiarFormulario = () => {
-    setFormulario(prev => ({ ...prev, observaciones: '' }))
+    setFormulario({ ...FORMULARIO_INICIAL })
   }
 
-  // Modal igual que en los otros formularios
   const handleModalClose = () => {
     setShowModal(false)
     navigate('/registros/bfs_321_196')
@@ -153,8 +230,6 @@ const FormularioBottlepack321 = () => {
           <h3 className="mb-0">Control de Producción Bottlepack 321</h3>
         </div>
         <div className="card-body">
-
-          {/* Tabs de navegación */}
           <ul className="nav nav-tabs mb-4">
             <li className="nav-item">
               <button className={`nav-link ${seccionActiva === 'basicos' ? 'active' : ''}`} onClick={() => setSeccionActiva('basicos')}>Datos Básicos</button>
@@ -169,22 +244,17 @@ const FormularioBottlepack321 = () => {
               <button className={`nav-link ${seccionActiva === 'resultados' ? 'active' : ''}`} onClick={() => setSeccionActiva('resultados')}>Resultados</button>
             </li>
           </ul>
-
-          {/* Secciones visuales */}
           {seccionActiva === 'basicos' && (
-            <SeccionBasicos formulario={formulario} handleChange={handleChange} />
+            <SeccionBasicos formulario={formulario} handleChange={handleChange} modelo="bfs_321_196" />
           )}
-
           {seccionActiva === 'cantidades' && (
-            <SeccionCantidades formulario={formulario} handleChange={handleChange} />
+            <SeccionCantidades formulario={formulario} handleChange={handleChange} modelo="bfs_321_196" />
           )}
-
           {seccionActiva === 'retrasos' && (
-            <SeccionRetrasos formulario={formulario} handleRetrasoChange={handleRetrasoChange} />
+            <SeccionRetrasos formulario={formulario} handleRetrasoChange={handleRetrasoChange} modelo="bfs_321_196" />
           )}
-
           {seccionActiva === 'resultados' && (
-            <SeccionResultados formulario={formulario} handleChange={handleChange} />
+            <SeccionResultados formulario={formulario} handleChange={handleChange} modelo="bfs_321_196" />
           )}
 
           <div className="d-flex gap-2 mt-4">
@@ -212,7 +282,6 @@ const FormularioBottlepack321 = () => {
           </div>
         </div>
       </div>
-      {/* Modal de éxito */}
       {showModal && (
         <div className="modal show fade" style={{ display: 'block', background: 'rgba(0,0,0,0.4)' }} tabIndex="-1" role="dialog">
           <div className="modal-dialog modal-dialog-centered" role="document">

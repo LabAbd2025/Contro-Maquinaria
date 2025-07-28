@@ -6,6 +6,7 @@ import {
   calcularEficacia,
   calcularEficiencia,
   calcularHorasNoEficientes,
+  calcularHorasIdeal,
   obtenerNombreDia,
   restarTiempos,
   obtenerFechaActual
@@ -17,23 +18,28 @@ import SeccionRetrasos from './Secciones/SeccionRetrasos'
 import SeccionResultados from './Secciones/SeccionResultados'
 import { FaHome } from 'react-icons/fa'
 
-const FormularioBottlepack = () => {
+const FORMULARIO_INICIAL = {
+  fechaInicio: '', fechaFin: '', duracionDias: '', dia: '',
+  producto: '', lote: '', horaInicio: '', horaFinal: '',
+  horasTrabajadas: '', horasReales: '', horasIdeales: '',
+  cantidadIdealPorHora: '',
+  cantidadProgramadaDiaria: '', cantidadEnvasada: '', cantidadEnvasadaTeorica: '',
+  cantidadSopladaAprobada: '', cantidadMateriaPrima: '',
+  factoresNoEficiencia: {},
+  retrasosProduccion: {}, retrasosCalidadControl: {}, retrasosMantenimiento: {},
+  otrosFactores: {}, totalHorasRetrasadas: '', horasRetrasoNoEficiencia: '',
+  eficacia: '', eficiencia: '', observaciones: ''
+}
+
+const FormularioBottlepack305 = () => {
   const navigate = useNavigate()
   const [seccionActiva, setSeccionActiva] = useState('basicos')
   const [showModal, setShowModal] = useState(false)
-  const [guardando, setGuardando] = useState(false) // Bloquear botón durante guardado
+  const [guardando, setGuardando] = useState(false)
 
-  const [formulario, setFormulario] = useState({
-    fechaInicio: '', fechaFin: '', duracionDias: '', dia: '',
-    producto: '', lote: '', horaInicio: '', horaFinal: '',
-    horasTrabajadas: '', horasReales: '', cantidadIdealPorHora: '',
-    cantidadProgramadaDiaria: '', cantidadEnvasada: '', cantidadEnvasadaTeorica: '',
-    cantidadSopladaAprobada: '', cantidadMateriaPrima: '', factoresNoEficiencia: {},
-    retrasosProduccion: {}, retrasosCalidadControl: {}, retrasosMantenimiento: {},
-    otrosFactores: {}, totalHorasRetrasadas: '', horasRetrasoNoEficiencia: '',
-    eficacia: '', eficiencia: '', observaciones: ''
-  })
+  const [formulario, setFormulario] = useState({ ...FORMULARIO_INICIAL })
 
+  // Autocalcula día, horas trabajadas y duración
   useEffect(() => {
     if (formulario.fechaInicio) {
       const dia = obtenerNombreDia(formulario.fechaInicio)
@@ -64,6 +70,13 @@ const FormularioBottlepack = () => {
       restarTiempos(formulario.horasTrabajadas, horasNoEficiencia),
       totalHorasRetrasadas
     )
+
+    // Horas ideales calculadas aquí SIEMPRE
+    const horasIdeales = calcularHorasIdeal(
+      formulario.cantidadEnvasada,
+      formulario.cantidadIdealPorHora
+    )
+
     const eficiencia = calcularEficiencia(horasReales, formulario.horasTrabajadas)
     const eficacia = calcularEficacia(formulario.cantidadEnvasada, formulario.cantidadProgramadaDiaria)
 
@@ -72,6 +85,7 @@ const FormularioBottlepack = () => {
       horasRetrasoNoEficiencia: horasNoEficiencia,
       totalHorasRetrasadas,
       horasReales,
+      horasIdeales,
       eficiencia,
       eficacia
     }))
@@ -83,6 +97,7 @@ const FormularioBottlepack = () => {
     formulario.retrasosMantenimiento,
     formulario.otrosFactores,
     formulario.cantidadEnvasada,
+    formulario.cantidadIdealPorHora,
     formulario.cantidadProgramadaDiaria
   ])
 
@@ -101,7 +116,6 @@ const FormularioBottlepack = () => {
     setFormulario(prev => ({ ...prev, [campo]: valor }))
   }
 
-  // AHORA handleRetrasoChange acepta: categoria, factor, tiempo, descripcion
   const handleRetrasoChange = (categoria, factor, tiempo, descripcion) => {
     setFormulario(prev => ({
       ...prev,
@@ -113,7 +127,7 @@ const FormularioBottlepack = () => {
   }
 
   const guardarRegistro = async () => {
-    if (guardando || showModal) return; // Ya está guardando o ya se guardó
+    if (guardando || showModal) return
     setGuardando(true)
     try {
       const nuevoRegistro = {
@@ -131,10 +145,9 @@ const FormularioBottlepack = () => {
   }
 
   const limpiarFormulario = () => {
-    setFormulario(prev => ({ ...prev, observaciones: '' }))
+    setFormulario({ ...FORMULARIO_INICIAL })
   }
 
-  // Al cerrar el modal, ir a la lista
   const handleModalClose = () => {
     setShowModal(false)
     navigate('/registros/bfs_305_183')
@@ -169,15 +182,12 @@ const FormularioBottlepack = () => {
           {seccionActiva === 'basicos' && (
             <SeccionBasicos formulario={formulario} handleChange={handleChange} />
           )}
-
           {seccionActiva === 'cantidades' && (
             <SeccionCantidades formulario={formulario} handleChange={handleChange} />
           )}
-
           {seccionActiva === 'retrasos' && (
             <SeccionRetrasos formulario={formulario} handleRetrasoChange={handleRetrasoChange} />
           )}
-
           {seccionActiva === 'resultados' && (
             <SeccionResultados formulario={formulario} handleChange={handleChange} />
           )}
@@ -226,9 +236,8 @@ const FormularioBottlepack = () => {
           </div>
         </div>
       )}
-
     </div>
   )
 }
 
-export default FormularioBottlepack
+export default FormularioBottlepack305

@@ -12,7 +12,7 @@ const Dashboard = () => {
       icon: 'bi-droplet-fill',
       color: 'primary',
       models: [
-        { id: 'bsf_321_196', name: 'BSF 321-196', icon: 'bi-beaker' },
+        { id: 'bfs_321_196', name: 'BSF 321-196', icon: 'bi-beaker' },
         { id: 'bfs_305_183', name: 'BFS 305-183', icon: 'bi-capsule' },
         { id: 'bfs_312_215', name: 'BFS 312-215', icon: 'bi-droplet-half' }
       ]
@@ -54,9 +54,22 @@ const Dashboard = () => {
     }
   }
 
+  // IDs de modelos que tienen formulario implementado
+  const idsConFormulario = [
+    // Bottlepack
+    'bfs_321_196', 'bfs_305_183', 'bfs_312_215',
+    // Plásticos
+    'INY-FCS-001', 'FOIL-CAP-001', 'FOIL-CAP-002', 'PEL-001', 'SOP-BID-001', 'INY-TAP-001',
+    // PPV
+    'PPV-EMP-001', 'PPV-LOT1-001', 'PPV-LOT2-001',
+    // PGV
+    'PGV-305-001', 'PGV-EMP-001', 'PGV-HEMO-001', 'PGV-PVC-001', 'PGVPVC-STD-001'
+  ];
+
+
+  // Navegación al formulario (tarjeta)
   const handleNavigate = (modelId) => {
-    const isBottlepack = modelId.startsWith('bsf') || modelId.startsWith('bfs')
-    if (isBottlepack) {
+    if (idsConFormulario.includes(modelId)) {
       navigate(`/form/${modelId}`)
     } else {
       navigate('/proximamente')
@@ -110,7 +123,14 @@ const Dashboard = () => {
                               <small className="text-muted d-block">{model.id.toUpperCase()}</small>
                               <span className={`badge bg-${machine.color}-subtle text-${machine.color} mt-1`}>{machine.name}</span>
                               <div className="mt-2 d-flex gap-2">
-                                <button className={`btn btn-sm btn-${machine.color}`} onClick={(e) => { e.stopPropagation(); handleNavigate(model.id) }}>
+                                {/* Botón Registros: NAVIGATE A /registros/:modelId */}
+                                <button
+                                  className={`btn btn-sm btn-${machine.color}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigate(`/registros/${model.id}`)
+                                  }}
+                                >
                                   Registros
                                 </button>
                               </div>
@@ -133,30 +153,24 @@ const Dashboard = () => {
           transform: translateY(0);
           box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
         .machine-card:hover {
           transform: translateY(-5px) scale(1.02);
           box-shadow: 0 10px 20px rgba(0,0,0,0.1);
           z-index: 10;
         }
-
         .machine-card.selected {
           transform: scale(1.02);
           box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-
         .icon-container {
           transition: all 0.3s ease;
         }
-
         .machine-card:hover .icon-container {
           transform: rotate(15deg) scale(1.1);
         }
-
         .cursor-pointer {
           cursor: pointer;
         }
-
         .animate__animated {
           animation-duration: 0.5s;
         }

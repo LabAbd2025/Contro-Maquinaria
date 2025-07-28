@@ -4,9 +4,12 @@ import { referenciasProductos } from '../helpers/referenciasProductos'
 const SeccionCantidades = ({ formulario, handleChange, modelo }) => {
   const [productoActivo, setProductoActivo] = useState(null)
 
+  // Obtén la referencia del producto seleccionado
+  const refProducto = referenciasProductos[formulario.producto]
+
   return (
     <div className="row g-3">
-      {/* Lista expandible de referencias por producto */}
+      {/* Referencia por producto */}
       {modelo !== 'bfs_312_215' ? (
         <div className="col-12">
           <div className="card border-info mb-4">
@@ -20,10 +23,10 @@ const SeccionCantidades = ({ formulario, handleChange, modelo }) => {
                     <button
                       className={`btn btn-outline-primary btn-sm w-100 text-start ${productoActivo === nombre ? 'fw-bold' : ''}`}
                       onClick={() => setProductoActivo(productoActivo === nombre ? null : nombre)}
+                      type="button"
                     >
                       {nombre}
                     </button>
-
                     {productoActivo === nombre && (
                       <div className="mt-2 border rounded bg-light p-2">
                         <p className="mb-1"><strong>Limpieza:</strong> {ref.limpieza}</p>
@@ -51,40 +54,62 @@ const SeccionCantidades = ({ formulario, handleChange, modelo }) => {
         </div>
       )}
 
+      {/* CAMPOS DE CANTIDADES */}
       <div className="col-md-6">
-        <label className="form-label">Cantidad Ideal para Envasada en una hora</label>
+        <label className="form-label">
+          Cantidad Ideal por Hora
+          <span className="text-muted small d-block">Capacidad máxima teórica</span>
+        </label>
         <input
           type="number"
           className="form-control"
-          value={formulario.cantidadIdealPorHora}
+          value={formulario.cantidadIdealPorHora || ''}
           onChange={(e) => handleChange('cantidadIdealPorHora', e.target.value)}
+          min={0}
         />
+        {formulario.producto && refProducto && (
+          <div className="small text-secondary mt-1">
+            Estándar por hora para <b>{formulario.producto}</b>: <b>{refProducto.unidadesPorHora}</b> unidades/hora
+          </div>
+        )}
       </div>
       <div className="col-md-6">
-        <label className="form-label">Cantidad Programada Diaria</label>
+        <label className="form-label">
+          Cantidad Programada Diaria
+          <span className="text-muted small d-block">Meta asignada para la jornada</span>
+        </label>
         <input
           type="number"
           className="form-control"
-          value={formulario.cantidadProgramadaDiaria}
+          value={formulario.cantidadProgramadaDiaria || ''}
           onChange={(e) => handleChange('cantidadProgramadaDiaria', e.target.value)}
+          min={0}
         />
       </div>
       <div className="col-md-6">
-        <label className="form-label">Cantidad Envasada - Mermas</label>
+        <label className="form-label">
+          Cantidad envasada Real
+          <span className="text-muted small d-block">Total logrado, descontando mermas</span>
+        </label>
         <input
           type="number"
           className="form-control"
-          value={formulario.cantidadEnvasada}
+          value={formulario.cantidadEnvasada || ''}
           onChange={(e) => handleChange('cantidadEnvasada', e.target.value)}
+          min={0}
         />
       </div>
       <div className="col-md-6">
-        <label className="form-label">Cantidad Envasada Teórica</label>
+        <label className="form-label">
+          Cantidad Envasada Teórica
+          <span className="text-muted small d-block">Lo esperado según tiempo de trabajo</span>
+        </label>
         <input
           type="number"
           className="form-control"
-          value={formulario.cantidadEnvasadaTeorica}
+          value={formulario.cantidadEnvasadaTeorica || ''}
           onChange={(e) => handleChange('cantidadEnvasadaTeorica', e.target.value)}
+          min={0}
         />
       </div>
       <div className="col-md-6">
@@ -92,18 +117,20 @@ const SeccionCantidades = ({ formulario, handleChange, modelo }) => {
         <input
           type="number"
           className="form-control"
-          value={formulario.cantidadSopladaAprobada}
+          value={formulario.cantidadSopladaAprobada || ''}
           onChange={(e) => handleChange('cantidadSopladaAprobada', e.target.value)}
+          min={0}
         />
       </div>
       <div className="col-md-6">
-        <label className="form-label">Cantidad de Materia Prima Utilizada (KGS)</label>
+        <label className="form-label">Materia Prima Utilizada (KGS)</label>
         <input
           type="number"
           step="0.01"
           className="form-control"
-          value={formulario.cantidadMateriaPrima}
+          value={formulario.cantidadMateriaPrima || ''}
           onChange={(e) => handleChange('cantidadMateriaPrima', e.target.value)}
+          min={0}
         />
       </div>
     </div>

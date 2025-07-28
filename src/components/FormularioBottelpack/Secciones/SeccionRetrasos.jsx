@@ -4,14 +4,21 @@ import {
   retrasosProduccion,
   retrasosCalidadControl,
   retrasosMantenimiento,
+  retrasosASA,
+  retrasosAlmacen,
   otrosFactores,
   placeholdersRetrasos
 } from '../helpers/calculos'
 import { referenciasProductos } from '../helpers/referenciasProductos'
 
-
 const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
   const [productoActivo, setProductoActivo] = useState(null)
+
+  // Helper para validar tiempo en formato HH:mm
+  const validarHoraMin = (valor) => {
+    if (!valor) return true
+    return /^([01]?\d|2[0-3]):[0-5]\d$/.test(valor)
+  }
 
   const renderGrupoRetrasos = (titulo, factores, categoria) => (
     <div className="card mb-4">
@@ -20,64 +27,59 @@ const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
       </div>
       <div className="card-body">
         <div className="row g-2">
-          {factores.map((factor, index) => (
-            <div key={index} className="col-lg-12 mb-2">
-              <div className="row g-1 align-items-center">
-                <div className="col-4">
-                  <label className="form-label text-sm">{factor}</label>
-                </div>
-                <div className="col-2">
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    value={formulario[categoria][factor]?.tiempo || ''}
-                    onChange={(e) => {
-                      let valor = e.target.value
-                      valor = valor.replace(/[^\d:]/g, '')
-                      const [horas = '00', minutos = '00'] = valor.split(':')
-                      const h = parseInt(horas) || 0
-                      const m = parseInt(minutos) || 0
-                      if (h >= 0 && h < 24 && m >= 0 && m < 60) {
-                        const tiempoFormateado = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+          {factores.map((factor, index) => {
+            const tiempo = formulario[categoria]?.[factor]?.tiempo || ''
+            const descripcion = formulario[categoria]?.[factor]?.descripcion || ''
+            const tiempoValido = validarHoraMin(tiempo)
+
+            return (
+              <div key={index} className="col-lg-12 mb-2">
+                <div className="row g-1 align-items-center">
+                  <div className="col-4">
+                    <label className="form-label text-sm">{factor}</label>
+                  </div>
+                  <div className="col-2">
+                    <input
+                      type="text"
+                      className={`form-control form-control-sm ${!tiempoValido && tiempo ? 'is-invalid' : ''}`}
+                      value={tiempo}
+                      onChange={(e) => {
+                        let valor = e.target.value.replace(/[^\d:]/g, '')
                         handleRetrasoChange(
                           categoria,
                           factor,
-                          tiempoFormateado,
-                          formulario[categoria][factor]?.descripcion || ''
+                          valor,
+                          descripcion
                         )
-                      } else if (!valor) {
+                      }}
+                      placeholder="00:00"
+                      maxLength={5}
+                    />
+                    {!tiempoValido && tiempo && (
+                      <div className="invalid-feedback p-0 m-0">Formato HH:mm</div>
+                    )}
+                  </div>
+                  <div className="col-6">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      value={descripcion}
+                      onChange={(e) => {
                         handleRetrasoChange(
                           categoria,
                           factor,
-                          '',
-                          formulario[categoria][factor]?.descripcion || ''
+                          tiempo,
+                          e.target.value
                         )
-                      }
-                    }}
-                    placeholder="00:00"
-                  />
-                </div>
-                <div className="col-6">
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    value={formulario[categoria][factor]?.descripcion || ''}
-                    onChange={(e) => {
-                      const descripcion = e.target.value
-                      handleRetrasoChange(
-                        categoria,
-                        factor,
-                        formulario[categoria][factor]?.tiempo || '',
-                        descripcion
-                      )
-                    }}
-                    placeholder={placeholdersRetrasos[factor] || "Motivo o descripción del retraso"}
-                    maxLength={120}
-                  />
+                      }}
+                      placeholder={placeholdersRetrasos[factor] || "Motivo o descripción del retraso"}
+                      maxLength={120}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
@@ -101,7 +103,6 @@ const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
                   >
                     {nombre}
                   </button>
-
                   {productoActivo === nombre && (
                     <div className="mt-2 border rounded bg-light p-2">
                       <p className="mb-1"><strong>Limpieza:</strong> {ref.limpieza}</p>
@@ -122,11 +123,13 @@ const SeccionRetrasos = ({ formulario, handleRetrasoChange, modelo }) => {
         </div>
       )}
 
-      {/* Renderizado de todos los grupos de factores (TAL CUAL EXCEL) */}
+      {/* Renderizado de todos los grupos de factores */}
       {renderGrupoRetrasos('Factores que No Afectan la Eficiencia', factoresNoEficiencia, 'factoresNoEficiencia')}
       {renderGrupoRetrasos('Retrasos por Producción', retrasosProduccion, 'retrasosProduccion')}
       {renderGrupoRetrasos('Retrasos por Control de Calidad', retrasosCalidadControl, 'retrasosCalidadControl')}
       {renderGrupoRetrasos('Retrasos por Mantenimiento', retrasosMantenimiento, 'retrasosMantenimiento')}
+      {renderGrupoRetrasos('Retrasos por ASA', retrasosASA, 'retrasosASA')}
+      {renderGrupoRetrasos('Retrasos por Almacén', retrasosAlmacen, 'retrasosAlmacen')}
       {renderGrupoRetrasos('Otros Factores', otrosFactores, 'otrosFactores')}
     </div>
   )

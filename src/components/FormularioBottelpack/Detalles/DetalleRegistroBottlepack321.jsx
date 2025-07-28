@@ -4,41 +4,92 @@ import {
   formatearPorcentaje,
   calcularSumaHorasRetrasadas,
   calcularEnvasadoIdeal,
-  calcularHorasIdeal
-} from '../../../components/FormularioBottelpack/helpers/calculos'
+  calcularHorasIdeal,
+} from '../../../components/FormularioBottelpack/helpers/calculos';
+
+// Convierte "HH:mm" o "HH:mm:ss" a horas decimales
+function parseTiempoAHoras(str) {
+  if (!str) return 0;
+  const partes = str.split(':').map(Number);
+  if (partes.length === 2) return partes[0] + partes[1] / 60;
+  if (partes.length === 3) return partes[0] + partes[1] / 60 + partes[2] / 3600;
+  return 0;
+}
+
+// Configura aquí tus grupos de retrasos y el orden de visualización
+const GRUPOS_RETRASO = [
+  { key: 'factoresNoEficiencia', titulo: 'Factores que NO afectan eficiencia', color: 'info' },
+  { key: 'retrasosProduccion', titulo: 'Retrasos por Producción', color: 'danger' },
+  { key: 'retrasosCalidadControl', titulo: 'Retrasos por Control de Calidad', color: 'warning' },
+  { key: 'retrasosMantenimiento', titulo: 'Retrasos por Mantenimiento', color: 'primary' },
+  { key: 'retrasosASA', titulo: 'Retrasos ASA', color: 'success' },         // Puedes habilitar cuando el backend los tenga
+  { key: 'retrasosAlmacen', titulo: 'Retrasos Almacén', color: 'secondary' },// Puedes habilitar cuando el backend los tenga
+  { key: 'otrosFactores', titulo: 'Otros Factores', color: 'dark' },
+];
 
 const DetalleRegistroBottlepack321 = ({ registro: r }) => {
-  const sumaHorasRetrasadasNoEficiencia = calcularSumaHorasRetrasadas(r.factoresNoEficiencia)
-  const envasadoIdeal = calcularEnvasadoIdeal(r.horasTrabajadas, r.cantidadIdealPorHora)
-  const horasIdeal = calcularHorasIdeal(r.cantidadEnvasada, r.cantidadIdealPorHora)
-  const totalHorasRetrasadas = calcularSumaHorasRetrasadas({
-    ...r.retrasosProduccion,
-    ...r.retrasosCalidadControl,
-    ...r.retrasosMantenimiento,
-    ...r.otrosFactores
-  })
+  // Extrae todos los posibles grupos de retrasos
+  const gruposRetrasos = GRUPOS_RETRASO.map(grupo => ({
+    ...grupo,
+    data: r[grupo.key] || {},
+  }));
 
-  // Renderizador para cada grupo de factores/retrasos
-  const GrupoRetrasos = ({ titulo, data, color }) => (
-    <div className="col-md-6 mb-2">
-      <div className={`card h-100 border-${color}`}>
-        <div className={`card-header bg-${color} text-white`}>{titulo}</div>
-        <div className="card-body">
-          {Object.entries(data || {}).filter(([, obj]) => obj?.tiempo).length === 0
-            ? <div className="text-muted small">No se reportaron retrasos</div>
-            : Object.entries(data || {}).map(([factor, obj], i) =>
-                obj?.tiempo ? (
-                  <div key={i} className="small">
-                    <strong>{factor}:</strong> {formatearTiempo(obj.tiempo)}
-                    {obj.descripcion && <span className="text-muted"> — {obj.descripcion}</span>}
-                  </div>
-                ) : null
-              )
-          }
+  // Cálculos
+  const horasIdeal = calcularHorasIdeal(r.cantidadEnvasada, r.cantidadIdealPorHora);
+  const envasadoIdeal = calcularEnvasadoIdeal(r.horasTrabajadas, r.cantidadIdealPorHora);
+
+  // Sumatorias
+  const sumaHorasRetrasadasNoEficiencia = calcularSumaHorasRetrasadas(r.factoresNoEficiencia || {});
+  const totalHorasRetrasadas = calcularSumaHorasRetrasadas(
+    Object.assign(
+      {},
+      r.retrasosProduccion || {},
+      r.retrasosCalidadControl || {},
+      r.retrasosMantenimiento || {},
+      r.retrasosASA || {},
+      r.retrasosAlmacen || {},
+      r.otrosFactores || {}
+    )
+  );
+
+  // Métricas principales
+  const eficiencia =
+    r.horasTrabajadas && horasIdeal && r.horasTrabajadas !== '00:00' && horasIdeal !== '00:00'
+      ? ((parseTiempoAHoras(horasIdeal) / parseTiempoAHoras(r.horasTrabajadas)) * 100).toFixed(2)
+      : '0.00';
+
+  const eficacia =
+    r.cantidadEnvasada && r.cantidadProgramadaDiaria
+      ? ((Number(r.cantidadEnvasada) / Number(r.cantidadProgramadaDiaria)) * 100).toFixed(2)
+      : '0.00';
+
+  // Render para cada grupo de retrasos
+  const GrupoRetrasos = ({ titulo, data, color }) => {
+    const items = Object.entries(data || {}).filter(
+      ([, obj]) => obj && obj.tiempo && obj.tiempo !== '00:00' && obj.tiempo !== '00:00:00'
+    );
+    if (items.length === 0) return null;
+    return (
+      <div className="col-md-6 mb-2">
+        <div className={`card h-100 border-${color}`}>
+          <div className={`card-header bg-${color} text-white`}>{titulo}</div>
+          <div className="card-body">
+            {items.map(([factor, obj], i) => (
+              <div key={i} className="small">
+                <strong>
+                  {factor.replaceAll('_', ' ').replace(/\s+/g, ' ').trim()}:
+                </strong>{' '}
+                {formatearTiempo(obj.tiempo)}
+                {obj.descripcion && (
+                  <span className="text-muted"> — {obj.descripcion}</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    );
+  };
 
   return (
     <div className="card-body p-4">
@@ -53,10 +104,22 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
               <div className="card border-primary h-100">
                 <div className="card-header">Datos Generales</div>
                 <div className="card-body">
-                  <p><strong className="text-danger">Fecha:</strong> {r.fechaInicio} - {r.fechaFin}</p>
-                  <p><strong className="text-danger">Día:</strong> {r.dia || '-'} {r.duracionDias && <>({r.duracionDias})</>}</p>
-                  <p><strong className="text-danger">Producto:</strong> {r.producto || '-'}</p>
-                  <p><strong className="text-danger">Lote:</strong> {r.lote || '-'}</p>
+                  <p>
+                    <strong className="text-danger">Fecha:</strong>{' '}
+                    {r.fechaInicio || '-'} {r.fechaFin ? `- ${r.fechaFin}` : ''}
+                  </p>
+                  <p>
+                    <strong className="text-danger">Día:</strong> {r.dia || '-'}{' '}
+                    {r.duracionDias && <>({r.duracionDias})</>}
+                  </p>
+                  <p>
+                    <strong className="text-danger">Producto:</strong>{' '}
+                    {r.producto || '-'}
+                  </p>
+                  <p>
+                    <strong className="text-danger">Lote:</strong>{' '}
+                    {r.lote || '-'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -64,10 +127,18 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
               <div className="card border-primary h-100">
                 <div className="card-header">Tiempos</div>
                 <div className="card-body">
-                  <p><strong>Hora Inicio:</strong> {formatearTiempo(r.horaInicio)}</p>
-                  <p><strong>Hora Final:</strong> {formatearTiempo(r.horaFinal)}</p>
-                  <p><strong>Horas Trabajadas:</strong> {formatearTiempo(r.horasTrabajadas)}</p>
-                  <p><strong>Horas Reales:</strong> {formatearTiempo(r.horasReales)}</p>
+                  <p>
+                    <strong>Hora Inicio:</strong> {formatearTiempo(r.horaInicio)}
+                  </p>
+                  <p>
+                    <strong>Hora Final:</strong> {formatearTiempo(r.horaFinal)}
+                  </p>
+                  <p>
+                    <strong>Horas Trabajadas:</strong> {formatearTiempo(r.horasTrabajadas)}
+                  </p>
+                  <p>
+                    <strong>Horas Ideales:</strong> {formatearTiempo(horasIdeal)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -90,16 +161,16 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
                     <div
                       className="progress-bar bg-success"
                       role="progressbar"
-                      style={{ width: `${r.eficiencia || 0}%` }}
+                      style={{ width: `${eficiencia}%` }}
                     >
-                      {formatearPorcentaje(r.eficiencia)}
+                      {formatearPorcentaje(eficiencia)}
                     </div>
                   </div>
                   <div className="text-center small text-muted">
-                    Horas Reales / Horas Trabajadas
+                    Horas Ideales / Horas Trabajadas
                   </div>
                   <div className="text-center fw-bold">
-                    {formatearTiempo(r.horasReales)} / {formatearTiempo(r.horasTrabajadas)}
+                    {formatearTiempo(horasIdeal)} / {formatearTiempo(r.horasTrabajadas)}
                   </div>
                 </div>
               </div>
@@ -112,9 +183,9 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
                     <div
                       className="progress-bar bg-primary"
                       role="progressbar"
-                      style={{ width: `${r.eficacia || 0}%` }}
+                      style={{ width: `${eficacia}%` }}
                     >
-                      {formatearPorcentaje(r.eficacia)}
+                      {formatearPorcentaje(eficacia)}
                     </div>
                   </div>
                   <div className="text-center small text-muted">
@@ -143,12 +214,12 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
                     <tr>
                       <td>Eficiencia</td>
                       <td className="small">
-                        (Horas Reales / Horas Trabajadas) × 100 <br />
+                        (Horas Ideales / Horas Trabajadas) × 100 <br />
                         <span className="text-muted">
-                          ({formatearTiempo(r.horasReales)} / {formatearTiempo(r.horasTrabajadas)})
+                          ({formatearTiempo(horasIdeal)} / {formatearTiempo(r.horasTrabajadas)})
                         </span>
                       </td>
-                      <td>{formatearPorcentaje(r.eficiencia)}</td>
+                      <td>{formatearPorcentaje(eficiencia)}</td>
                     </tr>
                     <tr>
                       <td>Eficacia</td>
@@ -158,7 +229,7 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
                           ({formatearCantidad(r.cantidadEnvasada)} / {formatearCantidad(r.cantidadProgramadaDiaria)})
                         </span>
                       </td>
-                      <td>{formatearPorcentaje(r.eficacia)}</td>
+                      <td>{formatearPorcentaje(eficacia)}</td>
                     </tr>
                     <tr>
                       <td>Cantidad Ideal por Hora</td>
@@ -210,7 +281,7 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
                 <td>{formatearCantidad(envasadoIdeal)}</td>
               </tr>
               <tr>
-                <td>Horas Ideal (según cantidad envasada)</td>
+                <td>Horas Ideales (según cantidad envasada)</td>
                 <td>{formatearTiempo(horasIdeal)}</td>
               </tr>
               <tr>
@@ -222,38 +293,26 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
         </div>
       </div>
 
-      {/* 4. Resumen de Factores — TODOS los grupos */}
+      {/* 4. Resumen de Factores */}
       <div className="card mb-4 shadow-sm">
         <div className="card-header bg-warning text-dark">
           <h5 className="mb-0">Resumen de Factores</h5>
         </div>
         <div className="card-body">
           <div className="row g-3">
-            <GrupoRetrasos
-              titulo="Factores que NO afectan eficiencia"
-              data={r.factoresNoEficiencia}
-              color="info"
-            />
-            <GrupoRetrasos
-              titulo="Retrasos por Producción"
-              data={r.retrasosProduccion}
-              color="danger"
-            />
-            <GrupoRetrasos
-              titulo="Retrasos por Control de Calidad"
-              data={r.retrasosCalidadControl}
-              color="warning"
-            />
-            <GrupoRetrasos
-              titulo="Retrasos por Mantenimiento"
-              data={r.retrasosMantenimiento}
-              color="primary"
-            />
-            <GrupoRetrasos
-              titulo="Otros Factores"
-              data={r.otrosFactores}
-              color="secondary"
-            />
+            {gruposRetrasos.map(
+              ({ key, titulo, data, color }) =>
+                Object.values(data || {}).some(
+                  obj => obj && obj.tiempo && obj.tiempo !== '00:00' && obj.tiempo !== '00:00:00'
+                ) && (
+                  <GrupoRetrasos
+                    key={key}
+                    titulo={titulo}
+                    data={data}
+                    color={color}
+                  />
+                )
+            )}
           </div>
         </div>
       </div>
@@ -270,7 +329,7 @@ const DetalleRegistroBottlepack321 = ({ registro: r }) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default DetalleRegistroBottlepack321
+export default DetalleRegistroBottlepack321;

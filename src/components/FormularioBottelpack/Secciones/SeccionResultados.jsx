@@ -1,4 +1,5 @@
 import React from "react";
+import { formatearTiempo, formatearPorcentaje } from '../helpers/calculos';
 
 const SeccionResultados = ({ formulario, handleChange }) => {
   const {
@@ -9,7 +10,7 @@ const SeccionResultados = ({ formulario, handleChange }) => {
     observaciones = "",
   } = formulario || {};
 
-  // Convierte a número para la barra
+  // Usa helpers para asegurar formato visual uniforme
   const eficaciaNum = parseFloat(eficacia) || 0;
   const eficienciaNum = parseFloat(eficiencia) || 0;
 
@@ -27,7 +28,7 @@ const SeccionResultados = ({ formulario, handleChange }) => {
             <input
               type="text"
               className="form-control bg-success text-white fw-bold"
-              value={horasRetrasoNoEficiencia}
+              value={formatearTiempo(horasRetrasoNoEficiencia)}
               readOnly
               tabIndex={-1}
               style={{ fontSize: "1.2rem" }}
@@ -45,7 +46,7 @@ const SeccionResultados = ({ formulario, handleChange }) => {
             <input
               type="text"
               className="form-control bg-danger text-white fw-bold"
-              value={totalHorasRetrasadas}
+              value={formatearTiempo(totalHorasRetrasadas)}
               readOnly
               tabIndex={-1}
               style={{ fontSize: "1.2rem" }}
@@ -66,7 +67,7 @@ const SeccionResultados = ({ formulario, handleChange }) => {
                 fontSize: "1.1rem"
               }}
             >
-              {`${eficaciaNum.toFixed(2)}%`}
+              {formatearPorcentaje(eficaciaNum)}
             </div>
           </div>
         </div>
@@ -83,7 +84,7 @@ const SeccionResultados = ({ formulario, handleChange }) => {
                 fontSize: "1.1rem"
               }}
             >
-              {`${eficienciaNum.toFixed(2)}%`}
+              {formatearPorcentaje(eficienciaNum)}
             </div>
           </div>
         </div>
