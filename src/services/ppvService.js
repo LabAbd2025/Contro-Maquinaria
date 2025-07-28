@@ -1,5 +1,5 @@
 import axios from 'axios'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_URL = import.meta.env.VITE_API_URL || 'https://panel-de-control.onrender.com'
 
 export const guardarRegistroPPV = async (modelo, datos) => {
   return await axios.post(`${API_URL}/api/division/${modelo}`, datos)
